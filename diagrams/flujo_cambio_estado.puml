@@ -1,0 +1,47 @@
+@startuml flujo_cambio_estado
+skinparam monochrome true
+skinparam shadowing false
+
+start
+
+:1. Long id, EstadoReporte nuevoEstado;
+
+if (id == null) then (V)
+  :2. throw new RuntimeException;
+  stop
+else (F)
+endif
+
+:3. reporteRepository.findById(id);
+
+if (!reporte.isPresent()) then (V)
+  :4. throw new RuntimeException;
+  stop
+else (F)
+endif
+
+:5. EstadoReporte estadoAnterior = reporte.getEstado();
+
+if (estadoAnterior == nuevoEstado) then (V)
+  :6. return convertirADTO(reporte);
+  stop
+else (F)
+endif
+
+:7. reporte.cambiarEstado(nuevoEstado);
+:8. reporteRepository.save(reporte);
+:9. historialEstadoRepository.save(historial);
+
+:10. mensajeNotificacionRepository.findByEstado(nuevoEstado);
+
+if (mensajeNotificacion.isPresent()) then (V)
+  :11. mensaje = mensajeNotificacion.getMensaje();
+else (F)
+endif
+
+:12. notificationService.enviarNotificacion(...);
+
+:13. return convertirADTO(reporte);
+
+stop
+@enduml

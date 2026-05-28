@@ -1,0 +1,69 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Archivos de fotos locales
+uploads/
+test_results.txt
+
+# Firebase Service Account (credenciales sensibles)
+firebase-service-account.json
+src/main/resources/firebase-service-account.json
+
+# Local secret overrides (Approach D: application-local.properties auto-importada)
+application-local.properties
+src/main/resources/application-local.properties
+.env
+.env.local
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+.db/
+.doc/
+
+# Logs and temp
+*.log
+hs_err_pid*
+*.tmp
+
+
+
+# General Java/Maven/IDE ignores
+*.class
+*.jar
+*.war
+*.ear
+
+# Hikari / pool files
+*.pid
+
+# Keep readme
+!README.md

@@ -1,0 +1,25 @@
+# Default: archivos de texto, normalizados a LF en repo y working copy.
+# Equipo Windows-only con IDEs modernos (IntelliJ/VS Code) maneja LF sin problema.
+* text=auto eol=lf
+
+# Windows batch: DEBE quedar en CRLF o cmd.exe rompe.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Shell POSIX: LF estricto (cubierto por global, explícito para claridad).
+*.sh text eol=lf
+/mvnw text eol=lf
+
+# Binarios — nunca tocados por normalización de line-endings.
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.exe binary
+*.dll binary
+*.so binary
+*.class binary

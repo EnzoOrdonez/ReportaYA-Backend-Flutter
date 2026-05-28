@@ -1,0 +1,181 @@
+@startuml DBmodelo
+!define Table(name,desc) class name as "desc" << (T,#FFAAAA) >>
+!define primary_key(x) <b><color:red>PK: x</color></b>
+!define foreign_key(x) <color:blue>FK: x</color>
+!define unique(x) <color:green>UK: x</color>
+
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+
+' ==========================================
+' ENTIDADES DEL SISTEMA
+' ==========================================
+
+entity "personas" as personas {
+  primary_key(id): BIGINT <<generated>>
+  --
+  tipo: VARCHAR(31) <<discriminator>>
+  nombre: VARCHAR(100) NOT NULL
+  apellido: VARCHAR(100) NOT NULL
+  email: VARCHAR(100) NOT NULL <<unique>>
+  telefono: VARCHAR(15)
+  --
+  **Técnico**
+  especialidad: VARCHAR(100)
+  disponible: BOOLEAN
+  --
+  **OperadorMunicipal**
+  area: VARCHAR(100)
+  turno: VARCHAR(50)
+}
+
+entity "cuentas" as cuentas {
+  primary_key(id): BIGINT <<generated>>
+  --
+  tipo: VARCHAR(20) NOT NULL
+  username: VARCHAR(50) NOT NULL <<unique>>
+  password: VARCHAR(255) NOT NULL
+  foreign_key(persona_id): BIGINT NOT NULL
+}
+
+entity "ubicaciones" as ubicaciones {
+  primary_key(id): BIGINT <<generated>>
+  --
+  direccion: VARCHAR(255) NOT NULL
+  latitud: DECIMAL(10,8) NOT NULL
+  longitud: DECIMAL(11,8) NOT NULL
+  distrito: VARCHAR(100)
+  provincia: VARCHAR(100)
+  departamento: VARCHAR(100)
+}
+
+entity "reportes" as reportes {
+  primary_key(id): BIGINT <<generated>>
+  --
+  titulo: VARCHAR(200) NOT NULL
+  descripcion: TEXT NOT NULL
+  tipo: VARCHAR(50) NOT NULL
+  prioridad: VARCHAR(20) NOT NULL
+  estado: VARCHAR(30) NOT NULL
+  fecha_creacion: TIMESTAMP NOT NULL
+  fecha_actualizacion: TIMESTAMP
+  --
+  **Campos de evidencias**
+  comentario_resolucion: VARCHAR(1000)
+  --
+  **Campos de auditoría - Cierre**
+  comentario_cierre: VARCHAR(1000)
+  fecha_cierre: TIMESTAMP
+  foreign_key(operador_cierre_id): BIGINT
+  --
+  **Campos de auditoría - Rechazo**
+  comentario_rechazo: VARCHAR(1000)
+  fecha_rechazo: TIMESTAMP
+  foreign_key(operador_rechazo_id): BIGINT
+  contador_rechazos: INT DEFAULT 0
+  --
+  **Relaciones**
+  foreign_key(ciudadano_id): BIGINT NOT NULL
+  foreign_key(ubicacion_id): BIGINT NOT NULL
+}
+
+entity "fotos" as fotos {
+  primary_key(id): BIGINT <<generated>>
+  --
+  url: VARCHAR(500) NOT NULL
+  tipo: VARCHAR(20) NOT NULL
+  descripcion: VARCHAR(255)
+  fecha_carga: TIMESTAMP NOT NULL
+  --
+  foreign_key(reporte_id): BIGINT NOT NULL
+  --
+  **Constraint**
+  CHECK (tipo IN ('INICIAL', 'PROCESO', 'FINAL'))
+}
+
+entity "asignaciones" as asignaciones {
+  primary_key(id): BIGINT <<generated>>
+  --
+  fecha_asignacion: TIMESTAMP NOT NULL
+  fecha_inicio: TIMESTAMP
+  fecha_cierre: TIMESTAMP
+  comentarios: TEXT
+  --
+  foreign_key(reporte_id): BIGINT NOT NULL
+  foreign_key(tecnico_id): BIGINT NOT NULL
+  foreign_key(operador_id): BIGINT NOT NULL
+}
+
+' ==========================================
+' RELACIONES
+' ==========================================
+
+' Persona -> Cuenta (1:1)
+personas ||--|| cuentas : "tiene"
+
+' Ciudadano -> Reportes (1:N)
+personas ||--o{ reportes : "crea"
+
+' Ubicacion -> Reportes (1:N)
+ubicaciones ||--o{ reportes : "tiene"
+
+' Reporte -> Fotos (1:N)
+reportes ||--o{ fotos : "contiene"
+
+' OperadorMunicipal -> Reportes cerrados (1:N)
+personas ||--o{ reportes : "cierra >"
+
+' OperadorMunicipal -> Reportes rechazados (1:N)
+personas ||--o{ reportes : "rechaza >"
+
+' Reporte -> Asignaciones (1:N)
+reportes ||--o{ asignaciones : "tiene"
+
+' Tecnico -> Asignaciones (1:N)
+personas ||--o{ asignaciones : "asignado a"
+
+' OperadorMunicipal -> Asignaciones (1:N)
+personas ||--o{ asignaciones : "gestiona"
+
+' ==========================================
+' NOTAS EXPLICATIVAS
+' ==========================================
+
+note right of personas
+  **Herencia JOINED**
+  - Ciudadano: sin campos adicionales
+  - Técnico: especialidad, disponible
+  - OperadorMunicipal: area, turno
+end note
+
+note right of reportes
+  **Estados del flujo:**
+  1. PENDIENTE → creado por ciudadano
+  2. PROCESO → técnico trabajando
+  3. RESUELTA → técnico completó (con fotos + comentario)
+  4. CERRADA → operador aprobó
+  5. RECHAZADO_AUDITO → operador rechazó (max 3 veces)
+  6. RECHAZADO → rechazo definitivo
+end note
+
+note right of fotos
+  **Tipos de evidencia:**
+  - INICIAL: antes de reparar
+  - PROCESO: durante reparación
+  - FINAL: después de reparar
+  
+  **Validación:**
+  Mínimo 1 foto requerida
+  antes de marcar RESUELTA
+end note
+
+note right of asignaciones
+  **Ciclo de vida:**
+  - fecha_asignacion: cuando operador asigna
+  - fecha_inicio: cuando técnico acepta
+  - fecha_cierre: cuando finaliza
+  
+  Si fecha_cierre == null → asignación activa
+end note
+
+@enduml

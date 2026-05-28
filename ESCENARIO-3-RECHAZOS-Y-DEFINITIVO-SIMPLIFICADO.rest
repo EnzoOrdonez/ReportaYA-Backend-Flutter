@@ -1,0 +1,187 @@
+###############################################################################
+# ESCENARIO: 3 RECHAZOS + CIERRE AUTOMÁTICO (FLUJO SIMPLIFICADO)
+# ===========================================================================
+# Fecha: 22 de noviembre de 2025
+# Descripción: Testing del flujo COMPLETO con máximo de rechazos (3) y cierre
+#
+# FLUJO SIMPLIFICADO (SIN ENDPOINT REINTENTAR NI RECHAZAR-DEFINITIVO):
+# 1. Técnico completa (intento 1) → RESUELTA
+# 2. Operador rechaza (contador=1) → RECHAZADO_AUDITO
+# 3. Técnico completa (intento 2) → RESUELTA
+# 4. Operador rechaza (contador=2) → RECHAZADO_AUDITO
+# 5. Técnico completa (intento 3, ÚLTIMO) → RESUELTA
+# 6. Operador rechaza (contador=3, MÁXIMO) → RECHAZADO (AUTOMÁTICO)
+# 7. ❌ Técnico intenta completar de nuevo → ERROR 400
+# 8. ✅ Verificar estado final RECHAZADO
+###############################################################################
+
+@baseUrl = http://localhost:8080/api
+@operadorId = 1
+@tecnicoId = 2
+@reporteId = 2
+
+###############################################################################
+# PASO 0: ASIGNAR REPORTE A TÉCNICO
+# Estado cambio: CREADA → ASIGNADA
+# Status esperado: 200 OK
+###############################################################################
+POST {{baseUrl}}/asignaciones
+Content-Type: application/json
+
+{
+  "reporteId": {{reporteId}},
+  "operadorId": {{operadorId}},
+  "tecnicoId": {{tecnicoId}},
+  "prioridad": "ALTA"
+}
+
+###############################################################################
+# PASO 1: TÉCNICO COMPLETA (INTENTO 1)
+# PROCESO → RESUELTA
+###############################################################################
+PATCH {{baseUrl}}/tecnicos/{{tecnicoId}}/reportes/{{reporteId}}/completar
+Content-Type: application/json
+
+{
+  "comentarioResolucion": "Reparación completada exitosamente",
+  "fotos": [
+    {"tipo": "INICIAL", "descripcion": "Foto inicial", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "PROCESO", "descripcion": "Foto proceso", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "FINAL", "descripcion": "Foto final", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="}
+  ]
+}
+
+###############################################################################
+# PASO 2: Operador rechaza intento 1
+# RESUELTA → RECHAZADO_AUDITO (contador=1)
+###############################################################################
+POST {{baseUrl}}/operador/reportes/{{reporteId}}/rechazar-audito
+Content-Type: application/json
+
+{
+  "operadorId": {{operadorId}},
+  "comentarioRechazo": "Falta revisión adicional. Intento 1 rechazado."
+}
+
+###############################################################################
+# PASO 3: TÉCNICO COMPLETA (INTENTO 2)
+# RECHAZADO_AUDITO → RESUELTA
+###############################################################################
+PATCH {{baseUrl}}/tecnicos/{{tecnicoId}}/reportes/{{reporteId}}/completar
+Content-Type: application/json
+
+{
+  "comentarioResolucion": "Intento 2: Con revisión adicional realizada",
+  "fotos": [
+    {"tipo": "INICIAL", "descripcion": "Foto inicial intento 2", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "PROCESO", "descripcion": "Foto proceso intento 2", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "FINAL", "descripcion": "Foto final intento 2", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="}
+  ]
+}
+
+###############################################################################
+# PASO 4: Operador rechaza intento 2
+# RESUELTA → RECHAZADO_AUDITO (contador=2)
+###############################################################################
+POST {{baseUrl}}/operador/reportes/{{reporteId}}/rechazar-audito
+Content-Type: application/json
+
+{
+  "operadorId": {{operadorId}},
+  "comentarioRechazo": "Se requieren verificaciones adicionales. Intento 2 rechazado."
+}
+
+###############################################################################
+# PASO 5: TÉCNICO COMPLETA (INTENTO 3 - ÚLTIMO PERMITIDO)
+# RECHAZADO_AUDITO → RESUELTA
+###############################################################################
+PATCH {{baseUrl}}/tecnicos/{{tecnicoId}}/reportes/{{reporteId}}/completar
+Content-Type: application/json
+
+{
+  "comentarioResolucion": "Intento 3: ÚLTIMA OPORTUNIDAD - Todas las verificaciones completadas al 100%",
+  "fotos": [
+    {"tipo": "INICIAL", "descripcion": "Foto inicial intento 3", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "PROCESO", "descripcion": "Foto proceso intento 3", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "FINAL", "descripcion": "Foto final intento 3", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="}
+  ]
+}
+
+###############################################################################
+# PASO 6: ✅ OPERADOR RECHAZA (CONTADOR=3, MÁXIMO)
+# RESUELTA → RECHAZADO (AUTOMÁTICO - CIERRE DEFINITIVO)
+# Status: 200 OK
+# Nota: Con contador=3, el sistema automáticamente cambia a RECHAZADO sin poder reintentar
+###############################################################################
+POST {{baseUrl}}/operador/reportes/{{reporteId}}/rechazar-audito
+Content-Type: application/json
+
+{
+  "operadorId": {{operadorId}},
+  "comentarioRechazo": "Se ha alcanzado el máximo de 3 rechazos tras auditoría exhaustiva. El problema no puede ser resuelto con los recursos técnicos disponibles. Se recomienda derivación a central de ingeniería municipal para análisis especializado. El reporte permanecerá como RECHAZADO sin posibilidad de reintentos adicionales."
+}
+
+###############################################################################
+# PASO 7: ❌ TÉCNICO INTENTA COMPLETAR DE NUEVO - DEBE FALLAR
+# Status: 400 BAD REQUEST
+# Mensaje: "El reporte debe estar en estado PROCESO o RECHAZADO_AUDITO"
+###############################################################################
+PATCH {{baseUrl}}/tecnicos/{{tecnicoId}}/reportes/{{reporteId}}/completar
+Content-Type: application/json
+
+{
+  "comentarioResolucion": "Intento 4 - ESTO DEBE FALLAR (estado es RECHAZADO)",
+  "fotos": [
+    {"tipo": "INICIAL", "descripcion": "No debería funcionar", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "PROCESO", "descripcion": "Error esperado", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "FINAL", "descripcion": "HTTP 400", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="}
+  ]
+}
+
+###############################################################################
+# PASO 8: Verificar estado final RECHAZADO
+###############################################################################
+GET {{baseUrl}}/reportes/{{reporteId}}
+
+###############################################################################
+# INFORMACIÓN ÚTIL
+###############################################################################
+# FLUJO SIMPLIFICADO DE RECHAZOS:
+#
+# contador=0 → Intento 1 completado
+#          ↓
+# Operador rechaza → contador=1, estado=RECHAZADO_AUDITO (permite reintentar)
+#          ↓
+# contador=1 → Intento 2 completado
+#          ↓
+# Operador rechaza → contador=2, estado=RECHAZADO_AUDITO (permite reintentar)
+#          ↓
+# contador=2 → Intento 3 completado
+#          ↓
+# Operador rechaza → contador=3, estado=RECHAZADO (CIERRE AUTOMÁTICO)
+#          ↓
+# ❌ Técnico NO PUEDE completar más
+# ✅ Caso cerrado definitivamente
+#
+# RESPUESTAS ESPERADAS:
+# PASO 1,3,5: 200 OK (completar)
+# PASO 2,4: 200 OK (rechazar con reintentos)
+# PASO 6: 200 OK (rechazar definitivo automático)
+# PASO 7: 400 BAD REQUEST ("El reporte debe estar en estado PROCESO o RECHAZADO_AUDITO")
+# PASO 8: Estado = RECHAZADO, contador = 3
+###############################################################################
+###############################################################################
+# PASO 2: OPERADOR CIERRA/APRUEBA EL REPORTE
+# RESUELTA → CERRADA (aprobado)
+# 
+# Este es el endpoint que queremos probar:
+# POST /api/operador/reportes/{id}/cerrar
+# Body: { operadorId, comentarioCierre }
+###############################################################################
+POST {{baseUrl}}/operador/reportes/{{reporteId}}/cerrar
+Content-Type: application/json
+
+{
+  "operadorId": {{operadorId}},
+  "comentarioCierre": "Auditoría completada. Trabajo aprobado y satisfactorio."
+}

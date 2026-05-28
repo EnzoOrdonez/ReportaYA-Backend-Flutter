@@ -1,0 +1,81 @@
+# Pruebas para Auth Service (AuthController)
+# Archivo generado para usar con la extensión REST Client de VS Code
+
+@baseUrl = http://localhost:8080
+
+### Health (opcional)
+GET {{baseUrl}}/actuator/health
+Accept: application/json
+
+
+### 1) Login exitoso (cuenta semilla: ci_carlos)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "usuario": "admin",
+  "password": "12345678"
+}
+
+
+### 2) Login - credenciales inválidas (debe devolver 401)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "usuario": "ci_carlos",
+  "password": "contrasena_incorrecta"
+}
+
+
+### 3) Login - falta campo (validación 400)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "usuario": "ci_carlos"
+}
+
+
+### 4) Crear cuenta de prueba (CIUDADANO) - POST /api/cuenta
+# Cambia `usuario`, `dni` y `correo` si ya existen en la BD de pruebas
+POST {{baseUrl}}/api/cuenta
+Content-Type: application/json
+Accept: application/json
+
+{
+  "tipoCuenta": "CIUDADANO",
+  "usuario": "test_api_user",
+  "contrasena": "testpassword123",
+  "nombres": "Prueba",
+  "apellidos": "API",
+  "dni": "90000001",
+  "telefono": "999000999",
+  "correo": "test.api@example.com",
+  "activo": true
+}
+
+
+### 5) Login con cuenta creada en el paso 4
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "usuario": "test_api_user",
+  "password": "testpassword123"
+}
+
+
+### 6) Obtener tipos de cuenta (información pública)
+GET {{baseUrl}}/api/cuenta/tipos
+Accept: application/json
+
+
+# Notas rápidas:
+# - El servidor debe estar corriendo en el puerto 8080 (cambia @baseUrl si corresponde).
+# - Si recibes errores 500 o 404, revisa rutas y la implementación del servicio.
+# - Si el login devuelve 401 con mensaje "Usuario o contraseña inválidos", verifica los datos en la BD o el código de autenticación.

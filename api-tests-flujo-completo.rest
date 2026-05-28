@@ -1,0 +1,145 @@
+@baseUrl = https://sprint1reportaya.onrender.com/api
+@baseHistorial = http://localhost:8080/historial-estados
+@baseNotificaciones = http://localhost:8080/notificaciones
+@contentType = application/json
+
+### ============================================
+### FLUJO COMPLETO: Crear cuenta, crear reporte, triaje (asignación), historial y notificaciones
+### Usar con la extensión REST Client (VS Code)
+### ============================================
+
+# NOTA: Este archivo prueba el flujo completo y usa variables en la cabecera.
+# - Ejecuta cada petición en orden
+# - Copia los valores "id" de las respuestas y actualiza las variables en la cabecera
+#   (ciudadanoId, tecnicoId, operadorId, reporteId) antes de ejecutar las peticiones que dependen de ellas.
+
+### 1) Crear Ciudadano (POST /api/cuenta - tipoCuenta = CIUDADANO)
+POST {{baseUrl}}/cuenta
+Content-Type: {{contentType}}
+
+{
+  "tipoCuenta": "CIUDADANO",
+  "usuario": "admin",
+  "contrasena": "12345678",
+  "nombres": "Floew",
+  "apellidos": "Ciudadano",
+  "dni": "90000010",
+  "telefono": "999000111",
+  "correo": "flow.eecieudadano@example.com",
+  "activo": true
+}
+
+# -> Copia el "id" de la respuesta y pégalo en la cabecera de este archivo como @ciudadanoId = <id>
+
+### 1.1) Registrar Token FCM para notificaciones (POST /notificaciones/registrar-token)
+POST {{baseNotificaciones}}/registrar-token
+Content-Type: {{contentType}}
+
+{
+  "cuentaId": 1,
+  "token": "fcm_token_simulado_123456789"
+}
+
+### 2) Crear Técnico (POST /api/cuenta - tipoCuenta = TECNICO)
+POST {{baseUrl}}/cuenta
+Content-Type: {{contentType}}
+
+{
+  "tipoCuenta": "TECNICO",
+  "usuario": "flow_tecnico_",
+  "contrasena": "Password123",
+  "nombres": "Flow",
+  "apellidos": "Tecnico",
+  "dni": "90000002",
+  "telefono": "999000222",
+  "correo": "flow.tecnico@example.com",
+  "activo": true
+}
+
+# -> Copia el "id" y pégalo como @tecnicoId = <id>
+
+### 3) Crear Operador Municipal (POST /api/cuenta - tipoCuenta = OPERADOR_MUNICIPAL)
+POST {{baseUrl}}/cuenta
+Content-Type: {{contentType}}
+
+{
+  "tipoCuenta": "OPERADOR_MUNICIPAL",
+  "usuario": "admin2",
+  "contrasena": "12345678",
+  "nombres": "Flow",
+  "apellidos": "Operador",
+  "dni": "90000017",
+  "telefono": "999000333",
+  "correo": "flow.operador@emxample.1com",
+  "activo": true
+}
+
+# -> Copia el "id" y pégalo como @operadorId = <id>
+
+### 4) Crear Reporte (POST /api/reportes) - usar cuentaId = ciudadanoId
+POST {{baseUrl}}/reportes
+Content-Type: {{contentType}}
+
+{
+  "titulo": "Flujo: Basura acumulada",
+  "descripcion": "Prueba de flujo: basura acumulada en esquina",
+  "cuentaId": 1,
+
+  "ubicacion": {
+    "latitud": -12.1200,
+    "longitud": -77.0350,
+    "direccion": "Jr. de Prueba 123"
+  }
+}
+
+# -> Copia el "id" del reporte creado y pégalo como @reporteId = <id>
+
+### 5) Ver reporte creado
+GET {{baseUrl}}/reportes
+
+### 6) Cambiar estado del reporte a REVISION
+PATCH {{baseUrl}}/reportes/1/estado?nuevoEstado=REVISION
+
+### 8) Crear Asignación (POST /api/asignaciones) - operador asigna técnico
+# Esto cambiará el estado a PROCESO automáticamente
+POST {{baseUrl}}/asignaciones
+Content-Type: {{contentType}}
+
+{
+  "reporteId": 1,
+  "operadorId": 3,
+  "tecnicoId": 2
+}
+
+### 9) Ver reporte actualizado (debería estar en estado PROCESO)
+GET {{baseUrl}}/reportes/1
+
+### 10) Ver Historial de Estados del Reporte
+GET {{baseHistorial}}/reporte/1
+
+### 11) Rechazar un reporte (Ejemplo con otro reporte o el mismo si se permite flujo)
+# Primero creamos otro reporte para rechazarlo
+POST {{baseUrl}}/reportes
+Content-Type: {{contentType}}
+
+{
+  "titulo": "Reporte Invalido",
+  "descripcion": "Este reporte no tiene sentido",
+  "cuentaId": 1,
+  "ubicacion": {
+    "latitud": -12.1200,
+    "longitud": -77.0350,
+    "direccion": "Jr. de Prueba 123"
+  }
+}
+
+### 11.1) Rechazar el reporte creado (ID 2 asumiendo secuencia)
+POST {{baseUrl}}/reportes/2/rechazar?motivo=Reporte%20duplicado%20o%20invalido
+
+### 12) Listar técnicos (paginado)
+GET {{baseUrl}}/tecnicos
+
+### 13) Listar todos los reportes (paginado)
+GET {{baseUrl}}/reportes?page=0
+
+# Fin del flujo completo

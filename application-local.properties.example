@@ -1,0 +1,11 @@
+# Copiar a `application-local.properties` (gitignored) y llenar con valores reales.
+# Pedir credenciales al equipo por un canal seguro (NO commit este archivo lleno).
+# Spring Boot lo auto-importa via `spring.config.import` en application.properties.
+
+# JWT (HS256). Mínimo 32 bytes / 256 bits.
+jwt.secret=REEMPLAZAR_CON_SECRETO_MIN_32_BYTES
+
+# Neon PostgreSQL (o el datasource que uses).
+spring.datasource.url=jdbc:postgresql://HOST/BD?sslmode=require
+spring.datasource.username=REEMPLAZAR
+spring.datasource.password=REEMPLAZAR

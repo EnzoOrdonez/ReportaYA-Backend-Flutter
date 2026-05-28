@@ -1,0 +1,260 @@
+@startuml Modelo dominio - ReportaYA (Versión Merge Main)
+
+' =======================
+' ENUMERACIONES
+' =======================
+enum Prioridad {
+  BAJA
+  MEDIA
+  ALTA
+}
+
+enum EstadoReporte {
+  PENDIENTE
+  REVISION
+  PROCESO
+  RESUELTA
+  CERRADA
+  RECHAZADO_AUDITO
+  RECHAZADO
+}
+
+enum TipoFoto {
+  INICIAL
+  PROCESO
+  FINAL
+}
+
+' =======================
+' ENTIDADES PRINCIPALES
+' =======================
+class Persona {
+  - id: Long
+  - nombres: String
+  - apellidos: String
+  - dni: String {unique}
+  - telefono: String
+  - correo: String {unique}
+  --
+  + getNombreCompleto(): String
+  + actualizarDatos(telefono, correo): void
+}
+
+abstract class Cuenta {
+  - id: Long
+  - usuario: String {unique}
+  - contrasenaHash: String
+  - fechaCreacion: LocalDateTime
+  - fechaActualizacion: LocalDateTime
+  - activo: boolean
+  --
+  + crearReporte(reporte): void
+  + cambiarContrasena(nuevaHash): void
+  + {abstract} getTipoCuenta(): String
+}
+
+class Reporte {
+  - id: Long
+  - titulo: String
+  - descripcion: String
+  - prioridad: Prioridad
+  - estado: EstadoReporte
+  - fechaCreacion: LocalDateTime
+  - fechaActualizacion: LocalDateTime
+  - comentarioResolucion: String
+  - comentarioCierre: String
+  - fechaCierre: LocalDateTime
+  - comentarioRechazo: String
+  - fechaRechazo: LocalDateTime
+  - contadorRechazos: Integer
+  --
+  + cambiarEstado(nuevoEstado): void
+  + cambiarPrioridad(nuevaPrioridad): void
+  + agregarAsignacion(asignacion): void
+  + cerrarAsignacionActiva(): void
+}
+
+class Ubicacion {
+  - id: Long
+  - latitud: Double
+  - longitud: Double
+  - direccion: String
+  - fechaRegistro: LocalDateTime
+}
+
+class Asignacion {
+  - id: Long
+  - fechaAsignacion: LocalDateTime
+  - fechaCierre: LocalDateTime
+}
+
+class Foto {
+  - id: Long
+  - url: String
+  - tipo: TipoFoto
+  - descripcion: String
+  - fechaCarga: LocalDateTime
+}
+
+class HistorialEstado {
+  - id: Long
+  - estadoAnterior: EstadoReporte
+  - estadoNuevo: EstadoReporte
+  - fechaCambio: LocalDateTime
+}
+
+class TokenNotificacion {
+  - id: Long
+  - token: String
+  - cuenta: Cuenta
+}
+
+class MensajeNotificacion {
+  - id: Long
+  - estado: EstadoReporte
+  - mensaje: String
+}
+
+' =======================
+' SUBCLASES DE CUENTA
+' =======================
+class Ciudadano {
+  + crearReporte(reporte): void
+  + consultarEstado(): void
+  + getTipoCuenta(): String
+}
+
+class OperadorMunicipal {
+  + asignarPrioridad(reporte, prioridad): void
+  + asignarTecnico(reporte, tecnico): Asignacion
+  + getTipoCuenta(): String
+}
+
+class Tecnico {
+  + getTipoCuenta(): String
+}
+
+' =======================
+' RELACIONES
+' =======================
+
+' Persona - Cuenta (1:1)
+Persona "1" -- "1" Cuenta : persona_id >
+
+' Cuenta - Reporte (1:N)
+Cuenta "1" o-- "0..*" Reporte : cuenta_id >
+
+' Reporte - Ubicacion (1:1 obligatorio)
+Reporte "1" *-- "1" Ubicacion : ubicacion_id >
+
+' Reporte - Asignacion (1:N)
+Reporte "1" o-- "0..*" Asignacion : reporte_id >
+
+' Asignacion - OperadorMunicipal (N:1)
+Asignacion "0..*" --> "1" OperadorMunicipal : operador_id >
+
+' Asignacion - Tecnico (N:1)
+Asignacion "0..*" --> "0..1" Tecnico : tecnico_id >
+
+' Reporte - Prioridad (Enum)
+Reporte --> Prioridad : <<enumeration>>
+
+' Reporte - EstadoReporte (Enum)
+Reporte --> EstadoReporte : <<enumeration>>
+
+' Reporte - Foto (1:N)
+Reporte "1" o-- "0..*" Foto : reporte_id >
+
+' Reporte - HistorialEstado (1:N - Auditoría)
+Reporte "1" o-- "0..*" HistorialEstado : reporte_id >
+
+' Cuenta - TokenNotificacion (1:1)
+Cuenta "1" -- "0..1" TokenNotificacion : cuenta_id >
+
+' MensajeNotificacion - EstadoReporte (por estado)
+MensajeNotificacion --> EstadoReporte : estado
+
+' Foto - TipoFoto (Enum)
+Foto --> TipoFoto : <<enumeration>>
+
+' Reporte - OperadorMunicipal (Auditoría)
+Reporte "0..*" --> "0..1" OperadorMunicipal : operador_cierre_id >
+Reporte "0..*" --> "0..1" OperadorMunicipal : operador_rechazo_id >
+
+' Herencia (JOINED Strategy)
+Ciudadano --|> Cuenta
+OperadorMunicipal --|> Cuenta
+Tecnico --|> Cuenta
+
+' =======================
+' NOTAS
+' =======================
+note right of Cuenta
+  **Herencia JOINED**
+  Estrategia: InheritanceType.JOINED
+  Cada subclase tiene su propia tabla
+  que se une con la tabla base
+end note
+
+note right of Reporte
+  **Estados del flujo:**
+  PENDIENTE → REVISION → 
+  PROCESO → RESUELTA → 
+  CERRADA | RECHAZADO_AUDITO | RECHAZADO
+  
+  **Campos de auditoría:**
+  - comentarioResolucion: Técnico explica solución
+  - comentarioCierre: Operador aprueba
+  - comentarioRechazo: Operador rechaza
+  - contadorRechazos: Máximo 3 rechazos
+end note
+
+note right of Foto
+  **Evidencias fotográficas:**
+  OBLIGATORIAS para cambiar a RESUELTA
+  - INICIAL: Antes del trabajo
+  - PROCESO: Durante reparación
+  - FINAL: Trabajo completado
+  Max 10MB, formatos imagen
+end note
+
+note right of Asignacion
+  **Restricción:**
+  Solo puede haber una asignación
+  activa (fechaCierre IS NULL)
+  por reporte
+end note
+
+note left of Ubicacion
+  **Ubicación obligatoria**
+  Cada reporte debe tener
+  coordenadas geográficas
+  (latitud, longitud)
+end note
+
+note right of HistorialEstado
+  **Auditoría de cambios:**
+  Registra CADA transición de estado
+  - Estado anterior y nuevo
+  - Fecha y hora exacta del cambio
+  - Permite rastrear completo del flujo
+end note
+
+note right of TokenNotificacion
+  **Notificaciones Firebase:**
+  Registra FCM token por usuario
+  - 1:1 con Cuenta (un token por usuario)
+  - Se actualiza cuando el usuario inicia sesión
+  - Usado por NotificationController
+end note
+
+note right of MensajeNotificacion
+  **Plantillas de notificación:**
+  Mensaje personalizado por EstadoReporte
+  Ejemplo:
+  - RESUELTA → "Tu reporte fue resuelto"
+  - CERRADA → "Tu reporte fue cerrado"
+  - RECHAZADO → "Tu reporte fue rechazado"
+end note
+
+@enduml

@@ -1,0 +1,84 @@
+###############################################################################
+# TEST: POST /api/operador/reportes/{id}/cerrar
+# ===========================================================================
+# Fecha: 20 de noviembre de 2025
+# Descripción: Testing del endpoint para cerrar/aprobar un reporte en auditoría
+#
+# FLUJO:
+# 1. Técnico completa reporte → RESUELTA (en auditoría)
+# 2. Operador CIERRA (aprueba) → CERRADA (éxito)
+# 3. Verificar estado final CERRADA
+###############################################################################
+
+@baseUrl = http://localhost:8080/api
+@operadorId = 1
+@tecnicoId = 2
+@reporteId = 2
+
+
+###############################################################################
+# PASO 0: VERIFICAR REPORTES EN ESTADO PROCESO (del técnico)
+# GET para ver qué reportes tiene asignados en estado PROCESO
+###############################################################################
+GET {{baseUrl}}/tecnicos/{{tecnicoId}}/reportes?estado=PROCESO
+Content-Type: application/json
+
+###############################################################################
+# PASO 0b: ASIGNAR REPORTE A TÉCNICO (si es necesario)
+# Estado cambio: CREADA → ASIGNADA
+# Status esperado: 200 OK
+###############################################################################POST {{baseUrl}}/asignaciones
+Content-Type: application/json
+
+{
+  "reporteId": {{reporteId}},
+  "operadorId": {{operadorId}},
+  "tecnicoId": {{tecnicoId}},
+  "prioridad": "ALTA"
+}
+
+###############################################################################
+# PASO 1: TÉCNICO COMPLETA REPORTE
+# PROCESO → RESUELTA (listo para auditoría del operador)
+###############################################################################
+PATCH {{baseUrl}}/tecnicos/{{tecnicoId}}/reportes/{{reporteId}}/completar
+Content-Type: application/json
+
+{
+  "comentarioResolucion": "Reparación completada exitosamente",
+  "fotos": [
+    {"tipo": "INICIAL", "descripcion": "Foto inicial del problema", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "PROCESO", "descripcion": "Foto del proceso de reparación", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="},
+    {"tipo": "FINAL", "descripcion": "Foto final del trabajo completado", "archivoBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="}
+  ]
+}
+
+###############################################################################
+# PASO 2: OPERADOR CIERRA/APRUEBA EL REPORTE
+# RESUELTA → CERRADA (aprobado)
+# 
+# Este es el endpoint que queremos probar:
+# POST /api/operador/reportes/{id}/cerrar
+# Body: { operadorId, comentarioCierre }
+###############################################################################
+POST {{baseUrl}}/operador/reportes/{{reporteId}}/cerrar
+Content-Type: application/json
+
+{
+  "operadorId": {{operadorId}},
+  "comentarioCierre": "Auditoría completada. Trabajo aprobado y satisfactorio."
+}
+
+###############################################################################
+# PASO 3: VERIFICAR ESTADO FINAL
+# GET para confirmar que el reporte está en estado CERRADA
+###############################################################################
+GET {{baseUrl}}/reportes/{{reporteId}}
+Content-Type: application/json
+
+###############################################################################
+# RESPUESTAS ESPERADAS:
+# PASO 1: 200 OK - Estado: RESUELTA
+# PASO 2: 200 OK - Estado: CERRADA (el endpoint que estamos probando)
+# PASO 3: 200 OK - Confirmación de estado: CERRADA
+###############################################################################
