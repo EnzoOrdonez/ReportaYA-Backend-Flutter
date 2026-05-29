@@ -48,3 +48,8 @@ api-tests*.rest
 # Local secrets defensive (.gitignore ya lo excluye;
 # evita que entre a la imagen si alguien lo coloca en src/main/resources/ por error)
 src/main/resources/application-local.properties
+
+# Firebase service account (defensivo — .gitignore ya lo excluye del repo;
+# evita que se hornee en la imagen Docker via COPY src ./src + mvn package)
+firebase-service-account.json
+src/main/resources/firebase-service-account.json

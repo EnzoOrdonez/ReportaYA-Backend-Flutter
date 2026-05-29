@@ -120,6 +120,8 @@ App funciona sin Firebase. Para activar notificaciones push y almacenamiento de 
 - `FIREBASE-SETUP.md` — setup del service account
 - `FIREBASE_STORAGE_GUIDE.md` — subida de imágenes
 
+El service account va en `src/main/resources/firebase-service-account.json` (gitignored — cada dev usa su propia copia, no se sube al repo).
+
 ## Documentación adicional
 
 - `ARQUITECTURA_SOLID.md` — diseño SOLID, endpoints

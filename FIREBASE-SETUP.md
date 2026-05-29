@@ -101,7 +101,7 @@ Esto permite:
 ### Opción 2: Probar endpoint de notificaciones
 
 ```http
-POST http://localhost:8080/notificaciones/enviar-prueba
+POST http://localhost:8081/notificaciones/enviar-prueba
   ?token=test_token_123
   &titulo=Prueba
   &mensaje=Hola
