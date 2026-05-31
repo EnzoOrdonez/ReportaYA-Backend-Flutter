@@ -16,7 +16,7 @@ public class CompletarReporteRequest {
     private String comentarioResolucion;
 
     @NotNull(message = "Las fotos son obligatorias")
-    @Size(min = 1, max = 3, message = "Debe adjuntar entre 1 y 3 fotos")
+    @Size(max = 3, message = "Puede adjuntar hasta 3 fotos")
     private List<FotoRequestInline> fotos;
 
     public CompletarReporteRequest() {

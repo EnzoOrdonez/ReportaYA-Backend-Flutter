@@ -173,6 +173,7 @@ public class TecnicoServiceImpl implements ITecnicoService {
                     Path dirPath = Paths.get("uploads/fotos");
                     Files.createDirectories(dirPath);
                     Path filePath = dirPath.resolve(nombreArchivo);
+                    Files.createDirectories(filePath.getParent());
                     Files.write(filePath, decodedBytes);
                     urlFoto = "uploads/fotos/" + nombreArchivo;
                     System.out.println("Firebase no disponible. Foto guardada localmente: " + nombreArchivo);
